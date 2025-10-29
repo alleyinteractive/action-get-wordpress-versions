@@ -22,4 +22,7 @@ runs:
       with:
         script: |
           const getWordPressVersions = require('./get-versions.js');
-          await getWordPressVersions();
+          const inputNumber = '${{ inputs.number }}';
+          const parsedNumber = parseInt(inputNumber);
+          const numberOfVersions = inputNumber === '' || isNaN(parsedNumber) ? 3 : parsedNumber;
+          await getWordPressVersions(core, numberOfVersions);

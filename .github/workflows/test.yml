@@ -25,14 +25,14 @@ jobs:
           # Get the versions output
           versions='${{ steps.get-versions.outputs.versions }}'
           echo "WordPress versions: $versions"
-          
+
           # Test that output is valid JSON
           if ! echo "$versions" | jq . > /dev/null 2>&1; then
             echo "❌ ERROR: Output is not valid JSON"
             exit 1
           fi
           echo "✅ Output is valid JSON"
-          
+
           # Test that we got exactly 3 versions (as requested)
           count=$(echo "$versions" | jq length)
           if [ "$count" -ne 3 ]; then
@@ -40,19 +40,19 @@ jobs:
             exit 1
           fi
           echo "✅ Got expected number of versions: $count"
-          
+
           # Test that all versions are strings and match the pattern (e.g., "6.4", "6.3")
           if ! echo "$versions" | jq -e 'all(type == "string" and test("^[0-9]+\\.[0-9]+$"))' > /dev/null; then
             echo "❌ ERROR: Not all versions match expected format (e.g., '6.4')"
             exit 1
           fi
           echo "✅ All versions match expected format"
-          
+
           # Test that versions are in descending order
           if ! echo "$versions" | jq -e '. == sort_by(. | split(".") | map(tonumber)) | reverse' > /dev/null; then
             echo "❌ ERROR: Versions are not in descending order"
             exit 1
           fi
           echo "✅ Versions are in descending order"
-          
+
           echo "🎉 All tests passed!"
