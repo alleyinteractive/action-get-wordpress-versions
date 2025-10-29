@@ -49,7 +49,7 @@ jobs:
           echo "✅ All versions match expected format"
 
           # Test that versions are in descending order
-          sorted_versions=$(echo "$versions" | jq -r 'sort_by(. | split(".") | map(tonumber)) | reverse')
+          sorted_versions=$(echo "$versions" | jq -c 'sort_by(. | split(".") | map(tonumber)) | reverse')
           if [ "$versions" != "$sorted_versions" ]; then
             echo "❌ ERROR: Versions are not in descending order"
             echo "Expected: $sorted_versions"
