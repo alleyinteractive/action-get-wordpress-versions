@@ -1,7 +1,4 @@
-const core = require('@actions/core');
-
-async function getWordPressVersions() {
-  const numberOfVersions = parseInt(core.getInput('number')) || 3;
+async function getWordPressVersions(core, numberOfVersions = 3) {
 
   try {
     // Fetch WordPress version data from the API

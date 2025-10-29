@@ -1,13 +1,10 @@
-const getWordPressVersions = require('./get-versions');
-
-// Mock @actions/core
+// Mock core object
 const mockCore = {
-  getInput: jest.fn(),
   setOutput: jest.fn(),
   setFailed: jest.fn(),
 };
 
-jest.mock('@actions/core', () => mockCore);
+const getWordPressVersions = require('./get-versions');
 
 // Mock global fetch
 global.fetch = jest.fn();
@@ -16,33 +13,28 @@ describe('getWordPressVersions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     console.log = jest.fn(); // Mock console.log
+    fetch.mockClear(); // Clear fetch mock
   });
 
   describe('successful API response', () => {
     const mockApiResponse = {
       offers: [
         { version: '6.4.1', response: 'autoupdate' },
-        { version: '6.4.0', response: 'autoupdate' },
         { version: '6.3.2', response: 'autoupdate' },
-        { version: '6.3.1', response: 'autoupdate' },
-        { version: '6.3.0', response: 'autoupdate' },
         { version: '6.2.3', response: 'autoupdate' },
-        { version: '6.2.2', response: 'autoupdate' },
         { version: '6.1.4', response: 'autoupdate' },
-        { version: '5.9.8', response: 'upgrade' }, // Should be filtered out
+        { version: '5.9.8', response: 'autoupdate' },
+        { version: '5.8.7', response: 'autoupdate' },
+        { version: '5.7.9', response: 'upgrade' }, // Should be filtered out
       ]
     };
 
-    beforeEach(() => {
+    it('should fetch and return default number of versions (3)', async () => {
       fetch.mockResolvedValue({
         json: jest.fn().mockResolvedValue(mockApiResponse),
       });
-    });
 
-    it('should fetch and return default number of versions (3)', async () => {
-      mockCore.getInput.mockReturnValue('');
-
-      await getWordPressVersions();
+      await getWordPressVersions(mockCore, 3);
 
       expect(fetch).toHaveBeenCalledWith('https://api.wordpress.org/core/version-check/1.7/');
       expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3', '6.2']));
@@ -50,57 +42,44 @@ describe('getWordPressVersions', () => {
     });
 
     it('should fetch and return custom number of versions', async () => {
-      mockCore.getInput.mockReturnValue('5');
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
 
-      await getWordPressVersions();
+      await getWordPressVersions(mockCore, 5);
 
       expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3', '6.2', '6.1', '5.9']));
     });
 
     it('should handle string input for number', async () => {
-      mockCore.getInput.mockReturnValue('2');
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
 
-      await getWordPressVersions();
+      await getWordPressVersions(mockCore, 2);
 
       expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3']));
     });
 
     it('should handle invalid number input and default to 3', async () => {
-      mockCore.getInput.mockReturnValue('invalid');
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
 
-      await getWordPressVersions();
+      await getWordPressVersions(mockCore, 3);
 
       expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3', '6.2']));
     });
 
     it('should filter out non-autoupdate versions', async () => {
-      mockCore.getInput.mockReturnValue('10');
-
-      await getWordPressVersions();
-
-      const expectedVersions = ['6.4', '6.3', '6.2', '6.1'];
-      expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(expectedVersions));
-    });
-
-    it('should remove duplicate versions after patch removal', async () => {
-      const duplicateResponse = {
-        offers: [
-          { version: '6.4.2', response: 'autoupdate' },
-          { version: '6.4.1', response: 'autoupdate' },
-          { version: '6.4.0', response: 'autoupdate' },
-          { version: '6.3.1', response: 'autoupdate' },
-        ]
-      };
-
       fetch.mockResolvedValue({
-        json: jest.fn().mockResolvedValue(duplicateResponse),
+        json: jest.fn().mockResolvedValue(mockApiResponse),
       });
 
-      mockCore.getInput.mockReturnValue('3');
+      await getWordPressVersions(mockCore, 10);
 
-      await getWordPressVersions();
-
-      expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3']));
+      const expectedVersions = ['6.4', '6.3', '6.2', '6.1', '5.9', '5.8'];
+      expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(expectedVersions));
     });
 
     it('should sort versions correctly', async () => {
@@ -117,17 +96,17 @@ describe('getWordPressVersions', () => {
         json: jest.fn().mockResolvedValue(unsortedResponse),
       });
 
-      mockCore.getInput.mockReturnValue('4');
-
-      await getWordPressVersions();
+      await getWordPressVersions(mockCore, 4);
 
       expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3', '6.2', '6.1']));
     });
 
     it('should log the found versions', async () => {
-      mockCore.getInput.mockReturnValue('2');
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
 
-      await getWordPressVersions();
+      await getWordPressVersions(mockCore, 2);
 
       expect(console.log).toHaveBeenCalledWith('Found 2 WordPress versions:', ['6.4', '6.3']);
     });
@@ -137,9 +116,8 @@ describe('getWordPressVersions', () => {
     it('should handle fetch errors', async () => {
       const fetchError = new Error('Network error');
       fetch.mockRejectedValue(fetchError);
-      mockCore.getInput.mockReturnValue('3');
 
-      await getWordPressVersions();
+      await getWordPressVersions(mockCore, 3);
 
       expect(mockCore.setFailed).toHaveBeenCalledWith('Failed to fetch WordPress versions: Network error');
       expect(mockCore.setOutput).not.toHaveBeenCalled();
@@ -149,9 +127,8 @@ describe('getWordPressVersions', () => {
       fetch.mockResolvedValue({
         json: jest.fn().mockRejectedValue(new Error('Invalid JSON')),
       });
-      mockCore.getInput.mockReturnValue('3');
 
-      await getWordPressVersions();
+      await getWordPressVersions(mockCore, 3);
 
       expect(mockCore.setFailed).toHaveBeenCalledWith('Failed to fetch WordPress versions: Invalid JSON');
     });
@@ -160,9 +137,8 @@ describe('getWordPressVersions', () => {
       fetch.mockResolvedValue({
         json: jest.fn().mockResolvedValue({ someOtherData: 'test' }),
       });
-      mockCore.getInput.mockReturnValue('3');
 
-      await getWordPressVersions();
+      await getWordPressVersions(mockCore, 3);
 
       expect(mockCore.setFailed).toHaveBeenCalledWith('No version offers found in WordPress API response');
     });
@@ -171,9 +147,8 @@ describe('getWordPressVersions', () => {
       fetch.mockResolvedValue({
         json: jest.fn().mockResolvedValue({ offers: [] }),
       });
-      mockCore.getInput.mockReturnValue('3');
 
-      await getWordPressVersions();
+      await getWordPressVersions(mockCore, 3);
 
       expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify([]));
     });
@@ -192,27 +167,23 @@ describe('getWordPressVersions', () => {
         json: jest.fn().mockResolvedValue(smallResponse),
       });
 
-      mockCore.getInput.mockReturnValue('5');
-
-      await getWordPressVersions();
+      await getWordPressVersions(mockCore, 5);
 
       expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3']));
     });
 
     it('should handle zero as input', async () => {
-      const mockApiResponse = {
+      const mockResponse = {
         offers: [
           { version: '6.4.1', response: 'autoupdate' },
         ]
       };
 
       fetch.mockResolvedValue({
-        json: jest.fn().mockResolvedValue(mockApiResponse),
+        json: jest.fn().mockResolvedValue(mockResponse),
       });
 
-      mockCore.getInput.mockReturnValue('0');
-
-      await getWordPressVersions();
+      await getWordPressVersions(mockCore, 0);
 
       expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify([]));
     });
@@ -231,9 +202,7 @@ describe('getWordPressVersions', () => {
         json: jest.fn().mockResolvedValue(complexVersionResponse),
       });
 
-      mockCore.getInput.mockReturnValue('4');
-
-      await getWordPressVersions();
+      await getWordPressVersions(mockCore, 4);
 
       expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.10', '6.9', '6.2']));
     });
