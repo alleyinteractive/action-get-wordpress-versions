@@ -1,0 +1,56 @@
+name: Test Get WordPress Versions Action
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-action:
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.get-versions.outputs.versions }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get WordPress Versions (default)
+        id: get-versions
+        uses: ./
+        with:
+          number: 3
+
+      - name: Display versions
+        run: |
+          echo "WordPress versions: ${{ steps.get-versions.outputs.versions }}"
+          echo "Number of versions: $(echo '${{ steps.get-versions.outputs.versions }}' | jq length)"
+
+  test-with-custom-number:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get WordPress Versions (5 versions)
+        id: get-versions-5
+        uses: ./
+        with:
+          number: 5
+
+      - name: Display versions
+        run: |
+          echo "WordPress versions (5): ${{ steps.get-versions-5.outputs.versions }}"
+
+  test-matrix-strategy:
+    needs: test-action
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        wp-version: ${{ fromJson(needs.test-action.outputs.versions) }}
+    steps:
+      - name: Test with WordPress ${{ matrix.wp-version }}
+        run: |
+          echo "Testing with WordPress version: ${{ matrix.wp-version }}"
+          echo "This would be where you run tests against this version"

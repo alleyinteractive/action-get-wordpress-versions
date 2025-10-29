@@ -1,0 +1,25 @@
+name: 'Get WordPress Versions'
+description: 'Fetch the last N number of WordPress versions and set as output'
+author: 'Alley Interactive'
+
+inputs:
+  number:
+    description: 'Number of WordPress versions to fetch'
+    required: false
+    default: '3'
+
+outputs:
+  versions:
+    description: 'Array of WordPress versions in JSON format'
+    value: ${{ steps.get-versions.outputs.versions }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Get WordPress Versions
+      id: get-versions
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const getWordPressVersions = require('./get-versions.js');
+          await getWordPressVersions();
