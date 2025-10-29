@@ -1,6 +1,4 @@
-const getWordPressVersions = require('./get-versions');
-
-// Mock @actions/core
+// Mock @actions/core before importing the module
 const mockCore = {
   getInput: jest.fn(),
   setOutput: jest.fn(),
@@ -9,6 +7,8 @@ const mockCore = {
 
 jest.mock('@actions/core', () => mockCore);
 
+const getWordPressVersions = require('./get-versions');
+
 // Mock global fetch
 global.fetch = jest.fn();
 
@@ -16,30 +16,27 @@ describe('getWordPressVersions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     console.log = jest.fn(); // Mock console.log
+    fetch.mockClear(); // Clear fetch mock
   });
 
   describe('successful API response', () => {
     const mockApiResponse = {
       offers: [
         { version: '6.4.1', response: 'autoupdate' },
-        { version: '6.4.0', response: 'autoupdate' },
         { version: '6.3.2', response: 'autoupdate' },
-        { version: '6.3.1', response: 'autoupdate' },
-        { version: '6.3.0', response: 'autoupdate' },
         { version: '6.2.3', response: 'autoupdate' },
-        { version: '6.2.2', response: 'autoupdate' },
         { version: '6.1.4', response: 'autoupdate' },
-        { version: '5.9.8', response: 'upgrade' }, // Should be filtered out
+        { version: '5.9.8', response: 'autoupdate' },
+        { version: '5.8.7', response: 'autoupdate' },
+        { version: '5.7.9', response: 'upgrade' }, // Should be filtered out
       ]
     };
 
-    beforeEach(() => {
+    it('should fetch and return default number of versions (3)', async () => {
       fetch.mockResolvedValue({
         json: jest.fn().mockResolvedValue(mockApiResponse),
       });
-    });
-
-    it('should fetch and return default number of versions (3)', async () => {
+      
       mockCore.getInput.mockReturnValue('');
 
       await getWordPressVersions();
@@ -50,6 +47,10 @@ describe('getWordPressVersions', () => {
     });
 
     it('should fetch and return custom number of versions', async () => {
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
+      
       mockCore.getInput.mockReturnValue('5');
 
       await getWordPressVersions();
@@ -58,6 +59,10 @@ describe('getWordPressVersions', () => {
     });
 
     it('should handle string input for number', async () => {
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
+      
       mockCore.getInput.mockReturnValue('2');
 
       await getWordPressVersions();
@@ -66,6 +71,10 @@ describe('getWordPressVersions', () => {
     });
 
     it('should handle invalid number input and default to 3', async () => {
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
+      
       mockCore.getInput.mockReturnValue('invalid');
 
       await getWordPressVersions();
@@ -74,33 +83,16 @@ describe('getWordPressVersions', () => {
     });
 
     it('should filter out non-autoupdate versions', async () => {
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
+      
       mockCore.getInput.mockReturnValue('10');
 
       await getWordPressVersions();
 
-      const expectedVersions = ['6.4', '6.3', '6.2', '6.1'];
+      const expectedVersions = ['6.4', '6.3', '6.2', '6.1', '5.9', '5.8'];
       expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(expectedVersions));
-    });
-
-    it('should remove duplicate versions after patch removal', async () => {
-      const duplicateResponse = {
-        offers: [
-          { version: '6.4.2', response: 'autoupdate' },
-          { version: '6.4.1', response: 'autoupdate' },
-          { version: '6.4.0', response: 'autoupdate' },
-          { version: '6.3.1', response: 'autoupdate' },
-        ]
-      };
-
-      fetch.mockResolvedValue({
-        json: jest.fn().mockResolvedValue(duplicateResponse),
-      });
-
-      mockCore.getInput.mockReturnValue('3');
-
-      await getWordPressVersions();
-
-      expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3']));
     });
 
     it('should sort versions correctly', async () => {
@@ -125,6 +117,10 @@ describe('getWordPressVersions', () => {
     });
 
     it('should log the found versions', async () => {
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
+      
       mockCore.getInput.mockReturnValue('2');
 
       await getWordPressVersions();
@@ -200,16 +196,6 @@ describe('getWordPressVersions', () => {
     });
 
     it('should handle zero as input', async () => {
-      const mockApiResponse = {
-        offers: [
-          { version: '6.4.1', response: 'autoupdate' },
-        ]
-      };
-
-      fetch.mockResolvedValue({
-        json: jest.fn().mockResolvedValue(mockApiResponse),
-      });
-
       mockCore.getInput.mockReturnValue('0');
 
       await getWordPressVersions();

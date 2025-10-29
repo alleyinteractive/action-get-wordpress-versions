@@ -1,7 +1,9 @@
 const core = require('@actions/core');
 
 async function getWordPressVersions() {
-  const numberOfVersions = parseInt(core.getInput('number')) || 3;
+  const inputNumber = core.getInput('number');
+  const parsedNumber = parseInt(inputNumber);
+  const numberOfVersions = inputNumber === '' || isNaN(parsedNumber) ? 3 : parsedNumber;
 
   try {
     // Fetch WordPress version data from the API
