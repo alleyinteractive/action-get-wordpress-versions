@@ -32,8 +32,9 @@ async function getWordPressVersions(core, numberOfVersions = 3) {
       })
       .slice(0, numberOfVersions) // Take only the requested number
       .map(version => {
-        // Remove patch version (e.g., 6.4.1 -> 6.4)
-        return version.replace(/\.[^.]*$/, '');
+        // Remove patch version only if it exists (e.g., 6.4.1 -> 6.4, but keep 6.9 as 6.9)
+        const parts = version.split('.');
+        return parts.length > 2 ? parts.slice(0, 2).join('.') : version;
       })
       .filter((version, index, array) => array.indexOf(version) === index); // Remove duplicates after patch removal
 
