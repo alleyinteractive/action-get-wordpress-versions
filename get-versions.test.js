@@ -206,5 +206,24 @@ describe('getWordPressVersions', () => {
 
       expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.10', '6.9', '6.2']));
     });
+
+    it('should handle two-part version numbers correctly (e.g., 6.9)', async () => {
+      const twoPartVersionResponse = {
+        offers: [
+          { version: '6.9', response: 'autoupdate' },
+          { version: '6.8.3', response: 'autoupdate' },
+          { version: '6.7.4', response: 'autoupdate' },
+          { version: '6.6.4', response: 'autoupdate' },
+        ]
+      };
+
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(twoPartVersionResponse),
+      });
+
+      await getWordPressVersions(mockCore, 3);
+
+      expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.9', '6.8', '6.7']));
+    });
   });
 });
