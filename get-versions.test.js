@@ -226,4 +226,99 @@ describe('getWordPressVersions', () => {
       expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.9', '6.8', '6.7']));
     });
   });
+
+  describe('minimum version filtering', () => {
+    const mockApiResponse = {
+      offers: [
+        { version: '6.4.1', response: 'autoupdate' },
+        { version: '6.3.2', response: 'autoupdate' },
+        { version: '6.2.3', response: 'autoupdate' },
+        { version: '6.1.4', response: 'autoupdate' },
+        { version: '6.0.5', response: 'autoupdate' },
+        { version: '5.9.8', response: 'autoupdate' },
+        { version: '5.8.7', response: 'autoupdate' },
+      ]
+    };
+
+    it('should return all versions from minimum version onwards', async () => {
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
+
+      await getWordPressVersions(mockCore, 3, '6.1');
+
+      expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3', '6.2', '6.1']));
+    });
+
+    it('should return all versions when minimum version is lower than all versions', async () => {
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
+
+      await getWordPressVersions(mockCore, 3, '5.0');
+
+      expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3', '6.2', '6.1', '6.0', '5.9', '5.8']));
+    });
+
+    it('should return only versions matching or newer than minimum version', async () => {
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
+
+      await getWordPressVersions(mockCore, 3, '6.3');
+
+      expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3']));
+    });
+
+    it('should return empty array when minimum version is higher than all versions', async () => {
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
+
+      await getWordPressVersions(mockCore, 3, '7.0');
+
+      expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify([]));
+    });
+
+    it('should ignore numberOfVersions when minimum version is specified', async () => {
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
+
+      // Even though numberOfVersions is 2, all versions >= 6.0 should be returned
+      await getWordPressVersions(mockCore, 2, '6.0');
+
+      expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3', '6.2', '6.1', '6.0']));
+    });
+
+    it('should use numberOfVersions when minimum version is empty string', async () => {
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
+
+      await getWordPressVersions(mockCore, 3, '');
+
+      expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3', '6.2']));
+    });
+
+    it('should handle minimum version with single digit', async () => {
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
+
+      await getWordPressVersions(mockCore, 3, '6');
+
+      expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3', '6.2', '6.1', '6.0']));
+    });
+
+    it('should handle minimum version matching exact version', async () => {
+      fetch.mockResolvedValue({
+        json: jest.fn().mockResolvedValue(mockApiResponse),
+      });
+
+      await getWordPressVersions(mockCore, 3, '6.2');
+
+      expect(mockCore.setOutput).toHaveBeenCalledWith('versions', JSON.stringify(['6.4', '6.3', '6.2']));
+    });
+  });
 });
