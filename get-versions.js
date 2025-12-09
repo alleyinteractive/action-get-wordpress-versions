@@ -48,12 +48,11 @@ async function getWordPressVersions(core, numberOfVersions = 3, minimumVersion =
       .filter((version, index, array) => array.indexOf(version) === index); // Remove duplicates after patch removal
 
     // Apply minimum version filter if specified
-    if (minimumVersion && minimumVersion !== '') {
+    const hasMinimumVersion = minimumVersion && minimumVersion !== '';
+    if (hasMinimumVersion) {
       versions = versions.filter(version => compareVersions(version, minimumVersion) >= 0);
-    }
-
-    // Apply numberOfVersions limit only if no minimum version is specified
-    if (!minimumVersion || minimumVersion === '') {
+    } else {
+      // Apply numberOfVersions limit only if no minimum version is specified
       versions = versions.slice(0, numberOfVersions);
     }
 
