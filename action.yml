@@ -7,6 +7,10 @@ inputs:
     description: 'Number of WordPress versions to fetch'
     required: false
     default: '3'
+  minimum-version:
+    description: 'Minimum WordPress version to fetch (e.g., "6.0"). If set, returns all versions from this version onwards.'
+    required: false
+    default: ''
 
 outputs:
   versions:
@@ -25,4 +29,5 @@ runs:
           const inputNumber = '${{ inputs.number }}';
           const parsedNumber = parseInt(inputNumber);
           const numberOfVersions = inputNumber === '' || isNaN(parsedNumber) ? 3 : parsedNumber;
-          await getWordPressVersions(core, numberOfVersions);
+          const minimumVersion = '${{ inputs.minimum-version }}';
+          await getWordPressVersions(core, numberOfVersions, minimumVersion);
