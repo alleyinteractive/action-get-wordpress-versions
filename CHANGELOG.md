@@ -2,6 +2,10 @@
 
 All notable changes to `action-get-wordpress-versions` will be documented in this file.
 
+## v1.0.3
+
+- Added `minimum-version`.
+
 ## v1.0.2
 
 - Add GPL-3.0-only license to package.json.
